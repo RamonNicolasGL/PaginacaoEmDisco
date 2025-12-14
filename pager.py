@@ -1,7 +1,7 @@
 import argparse
 import sys
 # AQUI ESTÁ A MÁGICA: Importamos a classe do outro arquivo
-from algorithms import FIFO 
+from algorithms import FIFO, LRU 
 
 def main():
     # --- CONFIGURAÇÃO DO ARGPARSE ---
@@ -36,6 +36,8 @@ def main():
 
     if algo_name == 'FIFO':
         simulator = FIFO(args.frames)
+    elif algo_name == 'LRU':
+        simulator = LRU(args.frames)
     # Futuramente: elif algo_name == 'LRU': simulator = LRU(args.frames)
     else:
         print(f"Erro: O algoritmo '{algo_name}' ainda não foi implementado.")
@@ -59,7 +61,16 @@ def main():
     print(f"Taxa de faltas: {taxa:.2f}%")
     print(f"Evicções: {simulator.evictions}")
     print("Conjunto residente final:")
-    print(f"page_ids: {simulator.frames}")
+    
+    # Imprime os IDs dos frames (0, 1, 2...)
+    print("frame_ids: ", end="")
+    valid_frames = [str(i) for i, page in enumerate(simulator.memory) if page != -1]
+    print(" ".join(valid_frames))
+
+    # Imprime as páginas correspondentes na mesma ordem física
+    print("page_ids:  ", end="")
+    valid_pages = [str(page) for page in simulator.memory if page != -1]
+    print(" ".join(valid_pages))
     print("-" * 30)
 
 if __name__ == "__main__":
