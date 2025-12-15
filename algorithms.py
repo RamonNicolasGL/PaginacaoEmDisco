@@ -323,3 +323,112 @@ class NRU(PageReplacementAlgorithm):
         self.pointer = (victim_idx + 1) % self.capacity
         
         return False
+
+
+# --- LFU (Least Frequently Used) ---
+class LFU(PageReplacementAlgorithm):
+    def __init__(self, capacity):
+        super().__init__(capacity)
+        # Dicionário para guardar o contador de referências
+        # Chave: Page ID, Valor: Quantidade de acessos
+        self.counts = {} 
+
+    def access(self, page_id):
+        # 1. HIT: Página já está na memória
+        if page_id in self.memory:
+            # "keep a counter of the number of references"
+            self.counts[page_id] += 1
+            return True
+
+        # 2. MISS
+        self.page_faults += 1
+        
+        # Página nova entra com contador inicial. 
+        # Geralmente inicia-se em 1 (o acesso atual).
+        self.counts[page_id] = 1
+
+        # Caso A: Existe espaço vazio
+        if -1 in self.memory:
+            idx = self.memory.index(-1)
+            self.memory[idx] = page_id
+            return False
+
+        # Caso B: EVICÇÃO (Memória Cheia)
+        self.evictions += 1
+        
+        # LFU: "requires that the page with the smallest count be replaced"
+        
+        # Vamos buscar a vítima APENAS entre as páginas que estão na memória física.
+        # (Não podemos olhar contadores de páginas que já saíram)
+        victim_idx = -1
+        min_count = float('inf')
+        
+        # Varre a memória para achar quem tem o menor contador
+        for i, current_page in enumerate(self.memory):
+            current_count = self.counts[current_page]
+            
+            if current_count < min_count:
+                min_count = current_count
+                victim_idx = i
+            # Em caso de empate, mantemos o primeiro encontrado (comportamento estável)
+        
+        # Remove a vítima
+        page_to_remove = self.memory[victim_idx]
+        
+        # Nota: Normalmente removemos o contador da vítima para economizar memória 
+        # e para que, se ela voltar, comece do 1 (evitando o problema de "remaning in memory").
+        del self.counts[page_to_remove]
+        
+        # Insere a nova página no lugar da vítima
+        self.memory[victim_idx] = page_id
+        
+        return 
+    
+
+# --- MFU (Most Frequently Used) ---
+class MFU(PageReplacementAlgorithm):
+    def __init__(self, capacity):
+        super().__init__(capacity)
+        self.counts = {}
+
+    def access(self, page_id):
+        # 1. HIT
+        if page_id in self.memory:
+            self.counts[page_id] += 1
+            return True
+
+        # 2. MISS
+        self.page_faults += 1
+        self.counts[page_id] = 1
+
+        # Caso A: Espaço vazio
+        if -1 in self.memory:
+            idx = self.memory.index(-1)
+            self.memory[idx] = page_id
+            return False
+
+        # Caso B: EVICÇÃO
+        self.evictions += 1
+        
+        # MFU: "page with the smallest count was probably just brought in"
+        # Portanto, removemos a que tem o MAIOR contador.
+        
+        victim_idx = -1
+        max_count = -1
+        
+        for i, current_page in enumerate(self.memory):
+            current_count = self.counts[current_page]
+            
+            # Procura o maior contador
+            if current_count > max_count:
+                max_count = current_count
+                victim_idx = i
+        
+        # Remove a vítima
+        page_to_remove = self.memory[victim_idx]
+        del self.counts[page_to_remove]
+        
+        # Insere a nova
+        self.memory[victim_idx] = page_id
+        
+        return False
