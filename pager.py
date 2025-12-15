@@ -1,7 +1,8 @@
 import argparse
 import sys
+import time
 # AQUI ESTÁ A MÁGICA: Importamos a classe do outro arquivo
-from algorithms import FIFO, LRU 
+from algorithms import FIFO, LRU, OTIMO, SECONDCHANCE, CLOCK, NRU 
 
 def main():
     # --- CONFIGURAÇÃO DO ARGPARSE ---
@@ -33,12 +34,19 @@ def main():
     print(args.algo)
     print(args.trace)
     print(args.frames)
-
+    
     if algo_name == 'FIFO':
         simulator = FIFO(args.frames)
     elif algo_name == 'LRU':
         simulator = LRU(args.frames)
-    # Futuramente: elif algo_name == 'LRU': simulator = LRU(args.frames)
+    elif algo_name == 'OTIMO':       
+        simulator = OTIMO(args.frames, references)
+    elif algo_name == 'SEGUNDACHANCE':       
+        simulator = SECONDCHANCE(args.frames)
+    elif algo_name == 'CLOCK':       
+        simulator = CLOCK(args.frames)
+    elif algo_name == 'NRU':       
+        simulator = NRU(args.frames)
     else:
         print(f"Erro: O algoritmo '{algo_name}' ainda não foi implementado.")
         sys.exit(1)
@@ -46,8 +54,13 @@ def main():
     # --- LOOP DE SIMULAÇÃO ---
     print(f"Executando {algo_name} com {args.frames} frames...")
     
+    start_time = time.perf_counter_ns()
+
     for page in references:
         simulator.access(page)
+    
+    end_time = time.perf_counter_ns()
+    duration_ms = (end_time - start_time)
 
     # --- EXIBIÇÃO DOS RESULTADOS [cite: 55-69] ---
     total_refs = len(references)
@@ -71,6 +84,7 @@ def main():
     print("page_ids:  ", end="")
     valid_pages = [str(page) for page in simulator.memory if page != -1]
     print(" ".join(valid_pages))
+    print(f"Tempo de execução: {duration_ms:.4f} ns")
     print("-" * 30)
 
 if __name__ == "__main__":
