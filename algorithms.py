@@ -1,4 +1,14 @@
-class PageReplacementAlgorithm:
+from abc import ABC, abstractmethod
+
+''' 
+-------------------------------------------------------------------------------------
+ CLASSE BASE (Padrão STRATEGY, cada algoritmo de paginação é uma estratégia concreta)
+ 
+ - Define os atributos que o objeto simulador dos algoritmos terá, independente de qual
+ algoritmo está em enálise
+-------------------------------------------------------------------------------------
+'''
+class PageReplacementAlgorithm(ABC):
     def __init__(self, capacity):
         self.capacity = capacity
         # Memória física fixa: preenchida com -1 para indicar vazio
@@ -7,8 +17,9 @@ class PageReplacementAlgorithm:
         self.page_faults = 0
         self.evictions = 0
     
+    @abstractmethod
     def access(self, page_id):
-        raise NotImplementedError
+        pass
 
     def get_resident_set(self):
         # Retorna apenas as páginas válidas (diferentes de -1)

@@ -1,17 +1,16 @@
 import argparse
 import sys
 import time
-# AQUI ESTÁ A MÁGICA: Importamos a classe do outro arquivo
 from algorithms import FIFO, LRU, OTIMO, SECONDCHANCE, CLOCK, NRU, LFU, MFU 
 
 def run_comparison_table(references):
     """
-    Roda todos os algoritmos para 3 e 4 frames e imprime uma tabela CSV-like.
+    Roda todos os algoritmos para 3 e 4 frames e imprime a tabela
     """
     algorithms_list = ['FIFO', 'LRU', 'OTIMO', 'CLOCK', 'SC', 'NRU', 'LFU', 'MFU']
     frame_options = [3, 4]
 
-    # Cabeçalho da tabela solicitado
+    # Cabeçalho da tabela
     print(f"{'Page Faults':<20} | {'3 Frames':<20} | {'4 Frames':<20} |")
     print("-" * 68)
 
@@ -19,7 +18,8 @@ def run_comparison_table(references):
         results = []
         
         for num_frames in frame_options:
-            # --- Instanciação (Factory) ---
+            
+            # Instanciação
             if algo_name == 'FIFO':
                 simulator = FIFO(num_frames)
             elif algo_name == 'LRU':
@@ -48,19 +48,43 @@ def run_comparison_table(references):
         # results[0] é para 3 frames, results[1] é para 4 frames
         print(f"{algo_name:<20} | {results[0]:<20} | {results[1]:<20} |")
 
+def run_visual_simulation(simulator, references):
+    """
+    Imprime o passo a passo da memória.
+    Substitui -1 por '_' .
+    """
+    print(f"Simulação Visual: {type(simulator).__name__} ({simulator.capacity} Frames)")
+    print(f"{'Ref':<5} | {'Status':<10} | {'Memória'}")
+    print("-" * 40)
+
+    for page in references:
+        # O método access retorna True (Está na memoria) ou False (Não está na memória)
+        is_hit = simulator.access(page)
+        
+        status = " " if is_hit else "X"
+        
+        # Formata a memória: troca -1 por um sublinhado visual
+        mem_str = "[ " + " ".join(str(p) if p != -1 else "_" for p in simulator.memory) + " ]"
+        
+        # Imprime a linha
+        print(f"{page:<5} | {status:<10} | {mem_str}")
+    
+    print("-" * 40)
+    print(f"Total Faltas: {simulator.page_faults}")
+
 def main():
-    # --- CONFIGURAÇÃO DO ARGPARSE ---
+    #CONFIGURAÇÃO DO ARGPARSE
     parser = argparse.ArgumentParser(description='Simulador de Algoritmos de Substituição de Páginas')
     
-    # Define que o usuário DEVE passar --algo, --frames e --trace
-    # Cada flag vira um atributo
+    # --algo, --frames e --trace
+    # flag -> atributo
     parser.add_argument('--algo', required=True, help='O algoritmo a ser usado (FIFO, LRU, OTIMO, etc.)')
     parser.add_argument('--frames', type=int, required=True, help='A quantidade de molduras de memória (ex: 3 ou 4)')
     parser.add_argument('--trace', required=True, help='Caminho do arquivo com a sequência de páginas')
-    # Processa os argumentos. Se algo estiver errado, o script para aqui e avisa o usuário.
+    parser.add_argument('--visual', action='store_true', help='Exibe execução passo a passo em vez do resumo')
     args = parser.parse_args()
 
-    # --- LEITURA DO ARQUIVO ---
+    # LEITURA DO ARQUIVO
     try:
         with open(args.trace, 'r') as f:
             references = [int(line.strip()) for line in f if line.strip()]
@@ -71,19 +95,14 @@ def main():
         print("Erro: O arquivo de trace deve conter apenas números inteiros.")
         sys.exit(1)
 
-    # --- MODO COMPARAÇÃO (TABELA) ---
+    # TABELA
     if args.algo.upper() == 'ALL':
         run_comparison_table(references)
         sys.exit(0) # Encerra o programa após imprimir a tabela
 
-    # --- SELEÇÃO DO ALGORITMO ---
+    # SELEÇÃO DO ALGORITMO
     algo_name = args.algo.upper()
     simulator = None
-
-   # print(args.table)
-    print(args.algo)
-    print(args.trace)
-    print(args.frames)
     
     if algo_name == 'FIFO':
         simulator = FIFO(args.frames)
@@ -98,14 +117,19 @@ def main():
     elif algo_name == 'NRU':       
         simulator = NRU(args.frames)
     elif algo_name == 'LFU':
-        simulator = LFU(args.frames) # ou simulator = LFU...
+        simulator = LFU(args.frames) 
     elif algo_name == 'MFU':
         simulator = MFU(args.frames)
     else:
         print(f"Erro: O algoritmo '{algo_name}' ainda não foi implementado.")
         sys.exit(1)
 
-    # --- LOOP DE SIMULAÇÃO ---
+    #PASSO A PASSO
+    if args.visual:
+        run_visual_simulation(simulator, references)
+        sys.exit(0)
+
+    # LOOP DE SIMULAÇÃO PADRAO
     print(f"Executando {algo_name} com {args.frames} frames...")
     
     start_time = time.perf_counter_ns()
@@ -116,7 +140,7 @@ def main():
     end_time = time.perf_counter_ns()
     duration_ms = (end_time - start_time)
 
-    # --- EXIBIÇÃO DOS RESULTADOS [cite: 55-69] ---
+    # EXIBIÇÃO DOS RESULTADOS
     total_refs = len(references)
     taxa = (simulator.page_faults / total_refs) * 100
 
@@ -129,7 +153,7 @@ def main():
     print(f"Evicções: {simulator.evictions}")
     print("Conjunto residente final:")
     
-    # Imprime os IDs dos frames (0, 1, 2...)
+    # Imprime os IDs dos frames
     print("frame_ids: ", end="")
     valid_frames = [str(i) for i, page in enumerate(simulator.memory) if page != -1]
     print(" ".join(valid_frames))
